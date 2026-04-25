@@ -93,10 +93,10 @@ export async function snapshotAllResponses(page: Page): Promise<string[]> {
         }
       }
 
-      log.info(`📸 [SNAPSHOT] Captured ${allTexts.length} existing responses`);
+      log.info(`ð¸ [SNAPSHOT] Captured ${allTexts.length} existing responses`);
     }
   } catch (error) {
-    log.warning(`⚠️ [SNAPSHOT] Failed to snapshot responses: ${error}`);
+    log.warning(`â ï¸ [SNAPSHOT] Failed to snapshot responses: ${error}`);
   }
 
   return allTexts;
@@ -178,7 +178,7 @@ export async function waitForLatestAnswer(
 
   if (debug) {
     log.debug(
-      `🔍 [DEBUG] Waiting for NEW answer. Ignoring ${knownHashes.size} known responses`
+      `ð [DEBUG] Waiting for NEW answer. Ignoring ${knownHashes.size} known responses`
     );
   }
 
@@ -197,7 +197,7 @@ export async function waitForLatestAnswer(
         const isVisible = await thinkingElement.isVisible();
         if (isVisible) {
           if (debug && pollCount % 5 === 0) {
-            log.debug("🔍 [DEBUG] NotebookLM still thinking (div.thinking-message visible)...");
+            log.debug("ð [DEBUG] NotebookLM still thinking (div.thinking-message visible)...");
           }
           await page.waitForTimeout(pollIntervalMs);
           continue;
@@ -223,7 +223,7 @@ export async function waitForLatestAnswer(
         // Check if it's the question echo
         if (lower === sanitizedQuestion) {
           if (debug) {
-            log.debug("🔍 [DEBUG] Found question echo, ignoring");
+            log.debug("ð [DEBUG] Found question echo, ignoring");
           }
           knownHashes.add(hashString(normalized)); // Mark as seen
           await page.waitForTimeout(pollIntervalMs);
@@ -238,14 +238,14 @@ export async function waitForLatestAnswer(
           stableCount++;
           if (debug && stableCount === requiredStablePolls) {
             log.debug(
-              `✅ [DEBUG] Text stable for ${stableCount} polls (${normalized.length} chars)`
+              `â [DEBUG] Text stable for ${stableCount} polls (${normalized.length} chars)`
             );
           }
         } else {
           // Text changed - streaming in progress
           if (debug && lastCandidate) {
             log.debug(
-              `🔄 [DEBUG] Text changed (${normalized.length} chars, was ${lastCandidate.length})`
+              `ð [DEBUG] Text changed (${normalized.length} chars, was ${lastCandidate.length})`
             );
           }
           stableCount = 1;
@@ -255,7 +255,7 @@ export async function waitForLatestAnswer(
         // Only return once text is stable
         if (stableCount >= requiredStablePolls) {
           if (debug) {
-            log.debug(`✅ [DEBUG] Returning stable answer (${normalized.length} chars)`);
+            log.debug(`â [DEBUG] Returning stable answer (${normalized.length} chars)`);
           }
           return normalized;
         }
@@ -266,7 +266,7 @@ export async function waitForLatestAnswer(
   }
 
   if (debug) {
-    log.debug(`⏱️ [DEBUG] Timeout after ${pollCount} polls`);
+    log.debug(`â±ï¸ [DEBUG] Timeout after ${pollCount} polls`);
   }
   return null;
 }
@@ -293,21 +293,21 @@ async function extractLatestText(
     const containers = await page.$$(primarySelector);
     const totalContainers = containers.length;
 
-    // Early exit if no new containers possible
-    if (totalContainers <= knownHashes.size) {
-      if (debug && pollCount % 5 === 0) {
-        log.dim(
-          `⏭️ [EXTRACT] No new containers (${totalContainers} total, ${knownHashes.size} known)`
-        );
-      }
-      return null;
-    }
+    // PATCH (MooseLedger fork, 2026-04-25): the early-exit
+    // `if (totalContainers <= knownHashes.size) return null;`
+    // assumed each new message creates a new .to-user-container element. But
+    // NotebookLM now appears to update existing containers in-place during
+    // streaming, so the count never increases and the loop early-exits every
+    // poll until the 120s deadline. Removed the early-exit so the scan below
+    // checks every container's text on every poll. The hash-based dedup still
+    // skips text we've already returned.
+    // See https://github.com/PleasePrompto/notebooklm-mcp/issues/43
 
     if (containers.length > 0) {
       // Only log every 5th poll to reduce noise
       if (debug && pollCount % 5 === 0) {
         log.dim(
-          `🔍 [EXTRACT] Scanning ${totalContainers} containers (${knownHashes.size} known)`
+          `ð [EXTRACT] Scanning ${totalContainers} containers (${knownHashes.size} known)`
         );
       }
 
@@ -326,7 +326,7 @@ async function extractLatestText(
               const textHash = hashString(text.trim());
               if (!knownHashes.has(textHash)) {
                 log.success(
-                  `✅ [EXTRACT] Found NEW text in container[${idx}]: ${text.trim().length} chars`
+                  `â [EXTRACT] Found NEW text in container[${idx}]: ${text.trim().length} chars`
                 );
                 return text.trim();
               } else {
@@ -344,22 +344,22 @@ async function extractLatestText(
       // Only log summary if debug enabled
       if (debug && pollCount % 5 === 0) {
         log.dim(
-          `⏭️ [EXTRACT] No NEW text (skipped ${skipped} known, ${empty} empty)`
+          `â­ï¸ [EXTRACT] No NEW text (skipped ${skipped} known, ${empty} empty)`
         );
       }
       return null; // Don't fall through to fallback!
     } else {
       if (debug) {
-        log.warning("⚠️ [EXTRACT] No containers found");
+        log.warning("â ï¸ [EXTRACT] No containers found");
       }
     }
   } catch (error) {
-    log.error(`❌ [EXTRACT] Primary selector failed: ${error}`);
+    log.error(`â [EXTRACT] Primary selector failed: ${error}`);
   }
 
   // Fallback: Try other selectors (only if primary selector failed/found nothing)
   if (debug) {
-    log.dim("🔄 [EXTRACT] Trying fallback selectors...");
+    log.dim("ð [EXTRACT] Trying fallback selectors...");
   }
 
   for (const selector of RESPONSE_SELECTORS) {
