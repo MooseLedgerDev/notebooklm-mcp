@@ -412,7 +412,7 @@ export class BrowserSession {
         timeoutMs: 120000, // 2 minutes
         pollIntervalMs: 1000,
         ignoreTexts: existingResponses,
-        debug: true,
+        debug: false,
       });
 
       if (!answer) {
