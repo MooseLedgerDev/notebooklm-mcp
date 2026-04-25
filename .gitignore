@@ -2,7 +2,9 @@
 node_modules/
 
 # Build output
-dist/
+# NOTE (MooseLedger fork): dist/ is intentionally committed so the fork is
+# installable via `npx -y github:MooseLedgerDev/notebooklm-mcp` without a
+# build step. Upstream publishes dist/ via npm; this fork doesn't.
 *.tsbuildinfo
 
 # Environment
