@@ -190,22 +190,14 @@ export async function waitForLatestAnswer(
   while (Date.now() < deadline) {
     pollCount++;
 
-    // Check if NotebookLM is still "thinking" (most reliable indicator)
-    try {
-      const thinkingElement = await page.$('div.thinking-message');
-      if (thinkingElement) {
-        const isVisible = await thinkingElement.isVisible();
-        if (isVisible) {
-          if (debug && pollCount % 5 === 0) {
-            log.debug("ð [DEBUG] NotebookLM still thinking (div.thinking-message visible)...");
-          }
-          await page.waitForTimeout(pollIntervalMs);
-          continue;
-        }
-      }
-    } catch {
-      // Ignore errors checking thinking state
-    }
+    // PATCH (MooseLedger fork, 2026-04-25): the original code skipped this poll
+    // entirely whenever `div.thinking-message` was visible. But NotebookLM keeps
+    // that element in the DOM after streaming completes (Playwright's
+    // isVisible() returns true for it indefinitely), so the loop continued
+    // forever and never reached the extraction below — even after a response
+    // had finished streaming. Removing the skip: the streaming-detection
+    // (3 stable polls) on the response container itself is the authoritative
+    // check for "is the answer done", and works correctly without this gate.
 
     // Extract latest NEW text
     const candidate = await extractLatestText(
