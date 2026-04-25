@@ -345,7 +345,7 @@ export class BrowserSession {
                 timeoutMs: 120000, // 2 minutes
                 pollIntervalMs: 1000,
                 ignoreTexts: existingResponses,
-                debug: false,
+                debug: true,
             });
             if (!answer) {
                 throw new Error("Timeout waiting for response from NotebookLM");
